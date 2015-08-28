@@ -53,6 +53,9 @@ peak in Guam (before Mount Jumullong Manglo). The distance from the
 peak to the bottom of the nearby Mariana Trench is the greatest change
 in elevation on Earth over such a short distance.
 
+So, if you go to Guam and make the modest 1300 foot climb you can
+arguably claim to be on the tallest mountain on earth.
+
 
 LICENSE
 =======
@@ -60,3 +63,16 @@ LICENSE
 FIXME: add a license file
 GPL v 3
 """
+
+class Everest(object):
+      """ """"
+      pass
+
+
+class 
+
+
+class Event(object):
+      pass
+
+
