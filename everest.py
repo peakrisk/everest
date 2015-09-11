@@ -1,4 +1,5 @@
-"""================
+"""
+================
 
 Event Generation
 ================
@@ -63,16 +64,74 @@ LICENSE
 FIXME: add a license file
 GPL v 3
 """
+import pandas as pd
+import numpy as np
 
 class Everest(object):
-      """ """"
-      pass
+    """ """
+    pass
 
+class EventGenerator(object):
 
-class 
+    def __init__(self, parms=None):
+
+        if parms:
+            self.__dict__.update(parms)
+
+    def initialise(self):
+        """ Do stuff like setting up random number seeds 
+
+        Also load pools of events and their frequencies.
+        """
+        pass
+
+    def generate_trials(n=1):
+        """ Generate n trials of events """
+        for trial in range(n):
+            yield self.generate_trial()
+
+    def generate_trial():
+        """ Generate a single trial of events """
+        pass
 
 
 class Event(object):
-      pass
+    pass
 
 
+class WeightedEventSampler(object):
+    """ Given n objects with weights w_1, ... 2_n select m of them 
+
+    For example:
+
+    >>> data = {a=1., b=2., c=3.}
+    
+    >>> sampler = WeightedEventSampler(data)
+
+    >>> sampler.sample(1)
+    """
+    def __init__(self, data):
+        """ """
+        self.data = data
+        self.total_weight = sum(data[x] for x in data)
+
+    def sample(self, n):
+
+        delta = self.total_weight / n
+
+        
+        
+        
+
+
+class Poisson(EventGenerator):
+
+
+    def generate_trial():
+
+        # Get number of events
+        for trial in range(n):
+            yield self.generate_trial()
+
+
+            
