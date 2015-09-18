@@ -14,20 +14,25 @@ class WeightedReservoir(object):
 
     Initialise with iterable of (weight, item) pairs.
 
-    If you have the weights as a numpy array, then you
-    can simply pass the weights to initialise_weights().
+    Alternatively, you can simply pass the weights to
+    initialise_weights() and initialise_values()
+
+    Or simply:
+
+    >>> res = WeightedReservoir()
+    >>> res.weights = weights
+    >>> res.values = values
+    
     This will avoid taking a copy of the weights.
 
     Sampling
     ========
     isample_with[out]_replacement() -- samples with[out] replacement,
-                                       returns indices of values to
-                                       select
+    returns indices of values to
+    select
 
     sample_with[out]_replacement()  -- samples with[out] replacement,
-                                       returns values to select
-    
-    
+    returns values to select
     """
     
     def __init__(self, data=None, seed=0):
@@ -43,11 +48,13 @@ class WeightedReservoir(object):
         if data is None:
             return
 
-        self.weights = np.array(x[0] for x in data)
-        self.values = [x[1] for x in data]
+        # save data
+        self.data = data
 
-        # dilemma: return indices of elements to select, or values?
-        # solution:  return indices, but have a routine that returns values.
+        # do initialisation for weights and values eg convert to numpy arrays
+        self.initialise_weights(x[0] for x in data)
+        self.initialise_values(x[1] for x in data)
+
     
     def seed(self, seed=0):
         """ Initialise RandomState """
@@ -55,10 +62,8 @@ class WeightedReservoir(object):
 
     def initialise_weights(self, weights):
         """ Do prep work for weights
-
-        
         """
-        self.weights = weights
+        self.weights = np.array(weights)
 
     def isample_without_replacement(self, k):
         """ Return a sample of size k, without replacement
@@ -69,10 +74,27 @@ class WeightedReservoir(object):
 
         Use a heap to keep track of selection.
         """
-        heap = 
+        heap = []
+
+        weights = 1.0 - (self.random(len(weights)) ** self.weights)
+
+        for ix, weight in enumerate(weights):
+            if ix < k:
+                heapq.heapadd(heap, (weight, ix))
+            else:
+                if heap[0] < weight:
+                    heapreplace(heap, (weight, ix))
+
+        # now sort the heap -- this is to make things repeatable
+        heap.sort()
+
+        # return permuted indices
+        return(self.random.permutation(x[0] for x in heap))
+                    
+        
     
     def isample_with_replacement(self, k):
-        """ Return a sample of size k, with replacement
+        """ Return indices for a sample of size k, with replacement
 
         i.e. same item can be sampled more than once.
         """
@@ -90,7 +112,7 @@ class WeightedReservoir(object):
         return [self.data[x][1] for x in self.isample_without_replacement(k)]
     
     def isample_with_replacement(self, k):
-        """ Return a sample of size k, with replacement
+        """ Return indices for a sample of size k, with replacement
 
         i.e. same item can be sampled more than once.
         """
