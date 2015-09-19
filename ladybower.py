@@ -63,7 +63,17 @@ class WeightedReservoir(object):
     def initialise_weights(self, weights):
         """ Do prep work for weights
         """
-        self.weights = np.array(weights)
+
+        self.weights = np.fromiter((x for x in weights), np.float64)
+
+        # normalise weights
+        totweight = sum(self.weights)
+        self.weights /= totweight
+
+    def initialise_values(self, values):
+        """ Do prep work for values
+        """
+        self.values = np.fromiter((x for x in values), np.float64)
 
     def isample_without_replacement(self, k):
         """ Return a sample of size k, without replacement
@@ -76,23 +86,22 @@ class WeightedReservoir(object):
         """
         heap = []
 
-        weights = 1.0 - (self.random(len(weights)) ** self.weights)
+        random = self.random.random_sample
+        weights = 1.0 - (random(len(self.weights)) ** self.weights)
 
         for ix, weight in enumerate(weights):
             if ix < k:
-                heapq.heapadd(heap, (weight, ix))
+                heapq.heappush(heap, (weight, ix))
             else:
-                if heap[0] < weight:
-                    heapreplace(heap, (weight, ix))
+                if heap[0][0] < weight:
+                    heapq.heapreplace(heap, (weight, ix))
 
         # now sort the heap -- this is to make things repeatable
         heap.sort()
 
         # return permuted indices
-        return(self.random.permutation(x[0] for x in heap))
+        return(self.random.permutation([x[1] for x in heap]))
                     
-        
-    
     def isample_with_replacement(self, k):
         """ Return indices for a sample of size k, with replacement
 
