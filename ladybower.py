@@ -87,7 +87,7 @@ class WeightedReservoir(object):
         heap = []
 
         random = self.random.random_sample
-        weights = 1.0 - (random(len(self.weights)) ** self.weights)
+        weights = random(len(self.weights)) ** (1.0/self.weights)
 
         for ix, weight in enumerate(weights):
             if ix < k:
