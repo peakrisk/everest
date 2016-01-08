@@ -78,12 +78,15 @@ class WeightedReservoir(object):
     def isample_without_replacement(self, k):
         """ Return a sample of size k, without replacement
 
-        k < n
+        k <= n
 
         O(n)
 
         Use a heap to keep track of selection.
         """
+        if k > len(self.weights):
+            raise ValueError("Sample size should be <= %d" % len(self.weights))
+    
         heap = []
 
         random = self.random.random_sample
