@@ -6,7 +6,7 @@ import collections
 
 from everest import ladybower
 
-class TestWeightedReservoit(unittest.TestCase):
+class TestWeightedReservoir(unittest.TestCase):
 
     def test_isample_without_replacement(self):
         """ Call the method
