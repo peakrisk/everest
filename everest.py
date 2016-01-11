@@ -64,12 +64,82 @@ LICENSE
 FIXME: add a license file
 GPL v 3
 """
+import os
+import json
+import importlib
+from collections import defaultdict
+
 import pandas as pd
 import numpy as np
 
 class Everest(object):
-    """ """
-    pass
+    """ A mountain of events
+
+    The events come from separate hills, or EventGenerators.
+    """
+    def __init__(self):
+        """ Initialise Everest """
+        self.hills = defaultdict(list)
+        
+    def load(self, folder=None):
+        """ Load a model by recursively scanning a folder for model pieces
+
+        If folder is not given, use current working directory.
+        """
+        if folder is None:
+            folder = '.'
+
+        for dirpath, dirnames, filenames in os.walk(folder):
+            for filename in filenames:
+                if filename.endswith('.json'):
+                    fullpath = os.path.join(dirpath, filename)
+                    with open(fullpath) as infile:
+                        json_data = infile.read()
+                        print(json_data)
+                        data = json.loads(json_data)
+
+                    clazz = self._get_class(data.get('class', 'everest.EventGenerator'))
+
+                    name = data.get('name', 'unknown')
+
+                    self.hills[name].append(clazz(data))
+
+    def dump(self):
+        """ Dump out current model """
+        print(self.hills)
+
+
+    def _get_class(self, path):
+        """ Given a path, return the clazz """
+        path = path.split('.')
+
+        module_name = '.'.join(path[:-1])
+
+        module = importlib.import_module(module_name)
+
+        return getattr(module, path[-1])
+
+
+    def seed(self, seed):
+        """ Seed random number generators """
+        pass
+
+    def generate_trials(self, start=0, end=1000, start_time=None, end_time=None):
+        """ Generate trials of events.
+
+        Each trial covers a period from start_time to end_time.
+
+        Trials will be numbered from start to end-1.
+
+        Seeding of random number generators will be such that the same
+        results will be returned given the same input parameters.
+
+        start: datetime object, default datetime.datetime.now()
+
+        end: datetime object, defauilt datetime.datetime.now + 1 year  """
+
+    def generate_trial(self, trial_number=None, start_time=None, end_time=None):
+        pass
 
 class EventGenerator(object):
 
