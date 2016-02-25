@@ -98,7 +98,7 @@ class Everest(object):
                         print(json_data)
                         data = json.loads(json_data)
 
-                    clazz = self._get_class(data.get('class', 'everest.EventGenerator'))
+                    clazz = self._get_class(data.get('class', 'everest.everest.EventGenerator'))
 
                     name = data.get('name', 'unknown')
 
