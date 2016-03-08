@@ -16,7 +16,7 @@ Installation / Usage
 
 To install use pip:
 
-    $ pip install everest
+    $ pip install everest-climber
 
 
 Or clone the repo:
