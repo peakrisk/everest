@@ -16,7 +16,7 @@ Code to track choices.
 import random
 
 class GlobalPotLuck:
-    """ Create a class attribure with this.
+    """ Create a class attribute with this.
 
     All instances will share the same set of stuff.
 
@@ -43,7 +43,7 @@ class GlobalPotLuck:
     # FIXME - may need to do something about delete
 
 class InstancePotLuck:
-    """ Create a class attribure with this.
+    """ Create a class attribute with this.
 
     Each instance will have its own set of potluck.
 
@@ -65,7 +65,10 @@ class InstancePotLuck:
     
     def __set__(self, instance, value):
 
-        choices = instance.__dict__.get(self.label, [])
+        choices = instance.__dict__.get(self.label)
+        if choices is None:
+            choices = []
+            instance.__dict__[self.label] = choices
         choices.append(value)
     
 
@@ -94,11 +97,13 @@ if __name__ == '__main__':
 
     h.sample = sample1
 
-    h.sample = sample2
+    setattr(h, 'sample', sample2)
 
+    print("10 samples, should see mix of 12 and 10")
     for x in range(10):
         print(h.sample())
 
+    print('hurricane2')
     h2 = Hurricanes()
 
     print(h2.sample())
@@ -120,4 +125,5 @@ if __name__ == '__main__':
     for x in range(10):
         print(h2.bar())
 
-    h.bar()
+    print("h.bar should return None")
+    print(h.bar)
