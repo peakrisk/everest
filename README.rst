@@ -2,7 +2,7 @@
  Event simulation framework
 =================================
 
-version number: 0.0.1
+version number: 0.0.2
 author: John Gill
 
 Overview
