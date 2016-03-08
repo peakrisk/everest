@@ -5,6 +5,20 @@ Decorate methods with monitoring code.
 """
 from functools import wraps
 
+def timeit(fn):
+
+    @wraps(fn)
+    def timer(*args, **kwargs):
+
+        t0 = time.clock()
+        result = fn(*args, *kwargs)
+        t1 = time.clock()
+
+        # FIXME: timing stuff needs saving somewhere
+        print("time for call:", t1 - t0)
+
+        return result
+
 def debug(fn):
 
     @wraps(fn)
