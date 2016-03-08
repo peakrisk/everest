@@ -135,7 +135,7 @@ class Everest(object):
 
             for item in data:
                 for link in item.inputs:
-                    graph.add_edge(link.name, hill)
+                    graph.add_edge(link, hill)
 
         # check if graph is acyclic
         is_dag = nx.is_directed_acyclic_graph(graph)
@@ -190,7 +190,11 @@ class Everest(object):
         for hill in self.hill_order:
             # pick a hill
             choices = self.hills[hill]
+            if not choices:
+                continue
+            
             which = np.random.randint(len(choices))
+            print(hill, 'choices:', len(choices), which)
             events += choices[which].generate_trial(
                 start_time, end_time)
 
@@ -216,7 +220,8 @@ class EventGenerator(object):
         for trial in range(n):
             yield self.generate_trial()
 
-    def generate_trial(self):
+    def generate_trial(self,
+                       start_time=None, end_time=None):
         """ Generate a single trial of events """
         return []
 
@@ -257,10 +262,11 @@ class WeightedEventSampler(object):
 class Poisson(EventGenerator):
 
 
-    def generate_trial():
+    def generate_trial(self,
+                       start_time=None, end_time=None):
         """  Return a single trial of events """
         # Get number of events
-        n = numpy.random.poisson(self.frequency)
+        n = np.random.poisson(self.parameters.get('frequency'))
 
         for event in range(n):
             yield Event()
@@ -270,7 +276,7 @@ if __name__ == '__main__':
 
     import sys
 
-    print(importlib.import_module('numpy.random'))
+    #print(importlib.import_module('numpy.random'))
 
     model = '.'
     if len(sys.argv) > 1:
@@ -280,5 +286,7 @@ if __name__ == '__main__':
 
     everest.load(model)
 
-
+    for x in range(10):
+        print(len(everest.generate_trial()))
+              
             
