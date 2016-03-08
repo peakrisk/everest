@@ -72,6 +72,8 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 
+import networkx as nx
+
 class Everest(object):
     """ A mountain of events
 
@@ -82,7 +84,9 @@ class Everest(object):
         self.hills = defaultdict(list)
         
     def load(self, folder=None):
-        """ Load a model by recursively scanning a folder for model pieces
+        """ Load a model
+
+        Recursively scans a folder for model pieces
 
         If folder is not given, use current working directory.
         """
@@ -95,18 +99,52 @@ class Everest(object):
                     fullpath = os.path.join(dirpath, filename)
                     with open(fullpath) as infile:
                         json_data = infile.read()
-                        print(json_data)
                         data = json.loads(json_data)
 
-                    clazz = self._get_class(data.get('class', 'everest.everest.EventGenerator'))
+                    clazz = self._get_class(data.get(
+                        'class', 'everest.everest.EventGenerator'))
 
                     name = data.get('name', 'unknown')
 
                     self.hills[name].append(clazz(data))
 
+        self.build_graph()
+
     def dump(self):
         """ Dump out current model """
         print(self.hills)
+
+
+    def build_graph(self):
+        """Build graph of relationships between hills 
+
+        Each hill is a list of things that can be used for that hill.
+
+        Each of these may have inputs (names of other hills).
+
+        A graph is build to show the input relations.
+
+        Checks in case graph is cyclic.
+
+        Does a topological sort on the hills to give and order in
+        which they should be processed.
+        """
+        graph = nx.DiGraph()
+
+        for hill, data in self.hills.items():
+
+            for item in data:
+                for link in item.inputs:
+                    graph.add_edge(link.name, hill)
+
+        # check if graph is acyclic
+        is_dag = nx.is_directed_acyclic_graph(graph)
+
+        if not is_dag:
+            raise ValueError("hills must be acyclic")
+
+        self.hill_order = nx.topological_sort(
+            graph, reverse=True)
 
 
     def _get_class(self, path):
@@ -115,16 +153,17 @@ class Everest(object):
 
         module_name = '.'.join(path[:-1])
 
+        print('trying to import:', module_name, path[-1])
         module = importlib.import_module(module_name)
 
         return getattr(module, path[-1])
-
 
     def seed(self, seed):
         """ Seed random number generators """
         pass
 
-    def generate_trials(self, start=0, end=1000, start_time=None, end_time=None):
+    def generate_trials(self, start=0, end=1000,
+                        start_time=None, end_time=None):
         """ Generate trials of events.
 
         Each trial covers a period from start_time to end_time.
@@ -136,10 +175,27 @@ class Everest(object):
 
         start: datetime object, default datetime.datetime.now()
 
-        end: datetime object, defauilt datetime.datetime.now + 1 year  """
+        end: datetime object, defauilt datetime.datetime.now + 1 year  
+        """
+        for trial in range(start, end):
+            yield self.generate_trial(
+                start_time, end_time)
 
-    def generate_trial(self, trial_number=None, start_time=None, end_time=None):
-        pass
+
+    def generate_trial(self,
+                       start_time=None, end_time=None):
+        """ Generate a single trial """
+
+        events = []
+        for hill in self.hill_order:
+            # pick a hill
+            choices = self.hills[hill]
+            which = np.random.randint(len(choices))
+            events += choices[which].generate_trial(
+                start_time, end_time)
+
+        return events
+
 
 class EventGenerator(object):
 
@@ -155,14 +211,18 @@ class EventGenerator(object):
         """
         pass
 
-    def generate_trials(n=1):
+    def generate_trials(self, n=1):
         """ Generate n trials of events """
         for trial in range(n):
             yield self.generate_trial()
 
-    def generate_trial():
+    def generate_trial(self):
         """ Generate a single trial of events """
-        pass
+        return []
+
+    def inputs(self):
+
+        return self.parms.get('inputs')
 
 
 class Event(object):
@@ -198,10 +258,27 @@ class Poisson(EventGenerator):
 
 
     def generate_trial():
-
+        """  Return a single trial of events """
         # Get number of events
-        for trial in range(n):
-            yield self.generate_trial()
+        n = numpy.random.poisson(self.frequency)
+
+        for event in range(n):
+            yield Event()
+
+
+if __name__ == '__main__':
+
+    import sys
+
+    print(importlib.import_module('numpy.random'))
+
+    model = '.'
+    if len(sys.argv) > 1:
+        model = sys.argv[1]
+
+    everest = Everest()
+
+    everest.load(model)
 
 
             
