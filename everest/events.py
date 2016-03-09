@@ -83,30 +83,20 @@ class Everest(object):
         """ Initialise Everest """
         self.hills = defaultdict(list)
         
-    def load(self, folder=None):
+    def load(self, data):
         """ Load a model
 
-        Recursively scans a folder for model pieces
+        Data is a list of dictionaries.
 
-        If folder is not given, use current working directory.
+        Each dictionary describes a part of the model.
         """
-        if folder is None:
-            folder = '.'
+        for item in data:
+            clazz = self._get_class(item.get(
+                'class', 'everest.everest.EventGenerator'))
 
-        for dirpath, dirnames, filenames in os.walk(folder):
-            for filename in filenames:
-                if filename.endswith('.json'):
-                    fullpath = os.path.join(dirpath, filename)
-                    with open(fullpath) as infile:
-                        json_data = infile.read()
-                        data = json.loads(json_data)
+            hill = clazz(item)
 
-                    clazz = self._get_class(data.get(
-                        'class', 'everest.everest.EventGenerator'))
-
-                    hill = clazz(data)
-
-                    self.hills[hill.short_name()].append(hill)
+            self.hills[hill.short_name()].append(hill)
 
         self.build_graph()
 
@@ -160,12 +150,23 @@ class Everest(object):
     def seed(self, seed):
         """ Seed random number generators """
         self.random = np.random.RandomState(seed)
+
+        for hill, choice, ix in self.walk_hills():
+            # include the hill and choice index in the seed
+            # to avoid identical seeding for different hills.
+            full_seed = [seed, ix] + [ord(x) for x in ''.join(hill)]
+            choice.seed(full_seed)
+
+    def initialise(self):
+        """ Initialise all the hills """
+        for hill, choice, ix in self.walk_hills():
+            choice.initialise()
+
+    def walk_hills(self):
+        """ Walk through all the hills """
         for hill, choices in self.hills.items():
             for ix, choice in enumerate(choices):
-                # include the hill and choice index in the seed
-                # to avoid identical seeding for different hills.
-                full_seed = [seed, ix] + [ord(x) for x in ''.join(hill)]
-                choice.seed(full_seed)
+                yield (hill, choice, ix)
 
     def generate_trials(self, start=0, end=1000,
                         start_time=None, end_time=None):
@@ -227,6 +228,8 @@ class EventGenerator(object):
         """ Do stuff like setting up random number seeds 
 
         Also load pools of events and their frequencies.
+
+        Initialisation should be done after seeding.
         """
         pass
 
@@ -291,12 +294,17 @@ class Poisson(EventGenerator):
         n = self.random.poisson(self.parameters.get('frequency'))
 
         for event in range(n):
-            yield Event()
+            yield self.pick_event()
 
+    def pick_event(self):
+        """ Pick an event """
+        return Event()
 
 if __name__ == '__main__':
 
     import sys
+    from everest import utils
+
 
     #print(importlib.import_module('numpy.random'))
 
@@ -306,8 +314,10 @@ if __name__ == '__main__':
 
     everest = Everest()
 
-    everest.load(model)
+    data = utils.load_json_from_folder(model)
+    everest.load(data)
     everest.seed(0)
+    everest.initialise()
 
     for x in everest.generate_trials(end=10):
         for key, data in x.items():
