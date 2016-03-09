@@ -104,9 +104,9 @@ class Everest(object):
                     clazz = self._get_class(data.get(
                         'class', 'everest.everest.EventGenerator'))
 
-                    name = data.get('name', 'unknown')
+                    hill = clazz(data)
 
-                    self.hills[name].append(clazz(data))
+                    self.hills[hill.short_name()].append(hill)
 
         self.build_graph()
 
@@ -153,14 +153,19 @@ class Everest(object):
 
         module_name = '.'.join(path[:-1])
 
-        print('trying to import:', module_name, path[-1])
         module = importlib.import_module(module_name)
 
         return getattr(module, path[-1])
 
     def seed(self, seed):
         """ Seed random number generators """
-        pass
+        self.random = np.random.RandomState(seed)
+        for hill, choices in self.hills.items():
+            for ix, choice in enumerate(choices):
+                # include the hill and choice index in the seed
+                # to avoid identical seeding for different hills.
+                full_seed = [seed, ix] + [ord(x) for x in ''.join(hill)]
+                choice.seed(full_seed)
 
     def generate_trials(self, start=0, end=1000,
                         start_time=None, end_time=None):
@@ -186,17 +191,23 @@ class Everest(object):
                        start_time=None, end_time=None):
         """ Generate a single trial """
 
-        events = []
+        events = {}
         for hill in self.hill_order:
             # pick a hill
             choices = self.hills[hill]
             if not choices:
                 continue
             
-            which = np.random.randint(len(choices))
-            print(hill, 'choices:', len(choices), which)
-            events += choices[which].generate_trial(
-                start_time, end_time)
+            which = self.random.randint(len(choices))
+
+            choice = choices[which]
+            hill_events = [x for x in
+                           choice.generate_trial(
+                               start_time, end_time,
+                               events)]
+            events[hill] = dict(
+                events=hill_events,
+                name=choice.full_name())
 
         return events
 
@@ -207,6 +218,10 @@ class EventGenerator(object):
 
         if parms:
             self.__dict__.update(parms)
+
+    def seed(self, seed):
+        """ Seed the random number generator """
+        self.random = np.random.RandomState(seed)
 
     def initialise(self):
         """ Do stuff like setting up random number seeds 
@@ -221,13 +236,23 @@ class EventGenerator(object):
             yield self.generate_trial()
 
     def generate_trial(self,
-                       start_time=None, end_time=None):
+                       start_time=None, end_time=None,
+                       events=None):
         """ Generate a single trial of events """
         return []
 
     def inputs(self):
 
         return self.parms.get('inputs')
+
+    def short_name(self):
+        """ Return short name for this generator. """
+        return '_'.join((self.region, self.peril))
+
+    def full_name(self):
+        """ Return full name for this generator. """
+        return '_'.join((self.source, self.region, self.peril,
+                         self.version))
 
 
 class Event(object):
@@ -254,19 +279,16 @@ class WeightedEventSampler(object):
 
         delta = self.total_weight / n
 
-        
-        
-        
 
 
 class Poisson(EventGenerator):
 
-
     def generate_trial(self,
-                       start_time=None, end_time=None):
+                       start_time=None, end_time=None,
+                       events=None):
         """  Return a single trial of events """
         # Get number of events
-        n = np.random.poisson(self.parameters.get('frequency'))
+        n = self.random.poisson(self.parameters.get('frequency'))
 
         for event in range(n):
             yield Event()
@@ -285,8 +307,10 @@ if __name__ == '__main__':
     everest = Everest()
 
     everest.load(model)
+    everest.seed(0)
 
-    for x in range(10):
-        print(len(everest.generate_trial()))
+    for x in everest.generate_trials(end=10):
+        for key, data in x.items():
+            print(key, len(data['events']), data['name'])
               
             
