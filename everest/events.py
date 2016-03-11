@@ -95,7 +95,7 @@ class Everest(object):
 
             # class is implementation for this event generator
             clazz = utils.get_class(item.get(
-                'class', 'everest.everest.EventGenerator'))
+                'class', 'everest.events.EventGenerator'))
 
             hill = clazz(item)
 
@@ -137,7 +137,7 @@ class Everest(object):
             raise ValueError("hills must be acyclic")
 
         self.hill_order = nx.topological_sort(
-            graph, reverse=True)
+            graph)
 
 
     def seed(self, seed):
@@ -210,6 +210,7 @@ class EventGenerator(object):
 
     def __init__(self, parms=None):
 
+        self.inputs = []
         if parms:
             self.__dict__.update(parms)
 
@@ -228,20 +229,29 @@ class EventGenerator(object):
         pass
 
     def generate_trials(self, n=1):
-        """ Generate n trials of events """
+        """ Generate n trials of events 
+        
+        FIXME: not sure we need this method.
+        """
         for trial in range(n):
             yield self.generate_trial()
 
-    def number_of_events(self):
+    def number_of_events(self,
+                         start_time=None,
+                         end_time=None,
+                         events=None):
 
         return 0
 
     def generate_trial(self,
-                       start_time=None, end_time=None,
+                       start_time=None,
+                       end_time=None,
                        events=None):
         """  Return a single trial of events """
         # Get number of events
-        n = self.number_of_events()
+        n = self.number_of_events(
+            start_time, end_time,
+            events)
 
         for event in range(n):
             yield self.pick_event()
@@ -251,7 +261,7 @@ class EventGenerator(object):
         return Event()
 
     def inputs(self):
-
+        """ Return the inputs that this event generator needs """
         return self.parms.get('inputs')
 
     def short_name(self):
@@ -270,15 +280,21 @@ class Event(object):
 
 class Poisson(EventGenerator):
 
-    def number_of_events(self):
+    def number_of_events(self,
+                         start_time=None,
+                         end_time=None,
+                         events=None):
         """ Return the number of events """
         return self.random.poisson(self.frequency)
         
 
 class NegativeBinomial(EventGenerator):
 
-    def number_of_events(self):
-
+    def number_of_events(self,
+                         start_time=None,
+                         end_time=None,
+                         events=None):
+        """ Number of events per trial """
         return self.random.negative_binomial(self.n, self.p)
 
 
