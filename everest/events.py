@@ -66,13 +66,14 @@ GPL v 3
 """
 import os
 import json
-import importlib
 from collections import defaultdict
 
 import pandas as pd
 import numpy as np
 
 import networkx as nx
+
+from everest import utils
 
 class Everest(object):
     """ A mountain of events
@@ -91,7 +92,9 @@ class Everest(object):
         Each dictionary describes a part of the model.
         """
         for item in data:
-            clazz = self._get_class(item.get(
+
+            # class is implementation for this event generator
+            clazz = utils.get_class(item.get(
                 'class', 'everest.everest.EventGenerator'))
 
             hill = clazz(item)
@@ -136,16 +139,6 @@ class Everest(object):
         self.hill_order = nx.topological_sort(
             graph, reverse=True)
 
-
-    def _get_class(self, path):
-        """ Given a path, return the clazz """
-        path = path.split('.')
-
-        module_name = '.'.join(path[:-1])
-
-        module = importlib.import_module(module_name)
-
-        return getattr(module, path[-1])
 
     def seed(self, seed):
         """ Seed random number generators """
@@ -220,14 +213,15 @@ class EventGenerator(object):
         if parms:
             self.__dict__.update(parms)
 
+        # Set up random state
+        self.random = np.random.RandomState()
+            
     def seed(self, seed):
         """ Seed the random number generator """
-        self.random = np.random.RandomState(seed)
+        self.random.seed(seed)
 
     def initialise(self):
-        """ Do stuff like setting up random number seeds 
-
-        Also load pools of events and their frequencies.
+        """ Do stuff like loading pools of events and their frequencies.
 
         Initialisation should be done after seeding.
         """
@@ -238,11 +232,23 @@ class EventGenerator(object):
         for trial in range(n):
             yield self.generate_trial()
 
+    def number_of_events(self):
+
+        return 0
+
     def generate_trial(self,
                        start_time=None, end_time=None,
                        events=None):
-        """ Generate a single trial of events """
-        return []
+        """  Return a single trial of events """
+        # Get number of events
+        n = self.number_of_events()
+
+        for event in range(n):
+            yield self.pick_event()
+
+    def pick_event(self):
+        """ Pick an event """
+        return Event()
 
     def inputs(self):
 
@@ -260,6 +266,20 @@ class EventGenerator(object):
 
 class Event(object):
     pass
+
+
+class Poisson(EventGenerator):
+
+    def number_of_events(self):
+        """ Return the number of events """
+        return self.random.poisson(self.frequency)
+        
+
+class NegativeBinomial(EventGenerator):
+
+    def number_of_events(self):
+
+        return self.random.negative_binomial(self.n, self.p)
 
 
 class WeightedEventSampler(object):
@@ -283,30 +303,9 @@ class WeightedEventSampler(object):
         delta = self.total_weight / n
 
 
-
-class Poisson(EventGenerator):
-
-    def generate_trial(self,
-                       start_time=None, end_time=None,
-                       events=None):
-        """  Return a single trial of events """
-        # Get number of events
-        n = self.random.poisson(self.parameters.get('frequency'))
-
-        for event in range(n):
-            yield self.pick_event()
-
-    def pick_event(self):
-        """ Pick an event """
-        return Event()
-
 if __name__ == '__main__':
 
     import sys
-    from everest import utils
-
-
-    #print(importlib.import_module('numpy.random'))
 
     model = '.'
     if len(sys.argv) > 1:

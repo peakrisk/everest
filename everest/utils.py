@@ -2,6 +2,8 @@
 General utilities
 """
 import os
+import importlib
+
 from ripl import json2py
 
 def load_json_from_folder(folder='.'):
@@ -16,4 +18,14 @@ def load_json_from_folder(folder='.'):
                 with open(fullpath) as infile:
                     json_data = infile.read()
                     yield(json2py.interpret(json_data))
+
+def get_class(path):
+    """ Given a path, return the class """
+    path = path.split('.')
+
+    module_name = '.'.join(path[:-1])
+
+    module = importlib.import_module(module_name)
+
+    return getattr(module, path[-1])
 
